@@ -1,0 +1,32 @@
+node {
+
+def mavenHome = tool name: "maven3.8.5"
+properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '5')), [$class: 'JobLocalConfiguration', changeReasonComment: ''], pipelineTriggers([cron('* * * * *')])])
+
+stage('Checkoutcode'){
+git branch: 'development', credentialsId: '2403871d-11a5-4960-bd70-915d7d84d98a', url: 'https://github.com/Third-Prac/maven-web-application.git'
+}
+
+stage('Buildpackage'){
+sh "${mavenHome}/bin/mvn clean package"
+
+}
+
+stage('Sonarqube _report'){
+sh "${mavenHome}/bin/mvn sonar:sonar"
+}
+stage('ArtifactRepository'){
+sh "${mavenHome}/bin/mvn deploy"
+}
+
+stage('Tomcat'){
+sshagent(['a274d37c-0073-481f-b811-b4f8d8acbd63']) {
+    // some block
+	sh"scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.233.166.180:/opt/apache-tomcat-9.0.65/webapps"
+
+}
+
+}
+
+
+}
